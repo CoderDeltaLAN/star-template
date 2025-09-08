@@ -1,0 +1,49 @@
+name: Release (signed)
+on: { push: { tags: ["v*.*.*"] } }
+permissions:
+  contents: write
+  attestations: write
+  id-token: write
+jobs:
+  build-py:
+    if: hashFiles('pyproject.toml') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pipx install poetry build
+      - run: poetry install --no-interaction
+      - run: poetry build
+      - uses: actions/upload-artifact@v4
+        with: { name: py-dist, path: dist }
+  build-ts:
+    if: hashFiles('package.json') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - run: npm ci
+      - run: npm pack --silent
+      - uses: actions/upload-artifact@v4
+        with: { name: ts-pack, path: "*.tgz" }
+  sign:
+    needs: [build-py, build-ts]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: py-dist, path: dist }
+        continue-on-error: true
+      - uses: actions/download-artifact@v4
+        with: { name: ts-pack, path: dist }
+        continue-on-error: true
+      - uses: sigstore/cosign-installer@v3
+      - env: { COSIGN_EXPERIMENTAL: "1" }
+        run: |
+          shopt -s nullglob
+          for f in dist/*; do cosign sign-blob --yes "$f" --output-signature "$f.sig"; done
+      - uses: actions/attest-build-provenance@v1
+        with: { subject-path: "dist/*" }
+      - uses: softprops/action-gh-release@v2
+        with: { files: dist/* }

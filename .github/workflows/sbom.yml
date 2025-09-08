@@ -1,0 +1,20 @@
+name: SBOM
+on:
+  push: { branches: [main] }
+  release: { types: [created, published] }
+permissions:
+  contents: write
+  attestations: write
+  id-token: write
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: anchore/sbom-action@v0
+        with: { format: cyclonedx-json, output-file: sbom.cdx.json }
+      - uses: actions/upload-artifact@v4
+        with: { name: sbom, path: sbom.cdx.json }
+      - if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with: { files: sbom.cdx.json }

@@ -1,0 +1,40 @@
+name: CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  python:
+    if: hashFiles('pyproject.toml') != ''
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pipx install poetry
+      - run: poetry install --no-interaction
+      - run: poetry run ruff check . --output-format=github
+      - run: poetry run black --check .
+      - name: PyTest
+        env:
+          PYTHONPATH: src
+          PYTHONWARNINGS: error
+        run: poetry run pytest -q
+  node:
+    if: hashFiles('package.json') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format
+      - run: npm run build
+      - run: npm test -- --ci
