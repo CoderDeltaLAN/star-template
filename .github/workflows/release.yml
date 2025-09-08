@@ -1,9 +1,8 @@
-name: Release (signed)
-on: { push: { tags: ["v*.*.*"] } }
-permissions:
-  contents: write
-  attestations: write
-  id-token: write
+name: release
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
 jobs:
   build-py:
     if: hashFiles('pyproject.toml') != ''
