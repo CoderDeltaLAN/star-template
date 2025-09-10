@@ -1,0 +1,35 @@
+{
+  "name": "star-template-ts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CoderDeltaLAN star template (TypeScript)",
+  "license": "MIT",
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier -w .",
+    "build": "tsc -p tsconfig.json",
+    "test": "jest",
+    "format:check": "prettier -c . --ignore-unknown"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.3.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.5.0"
+  },
+  "files": [
+    "lib/src",
+    "LICENSE",
+    "README.md",
+    "SECURITY.md"
+  ]
+}
