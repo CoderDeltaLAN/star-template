@@ -1,15 +1,12 @@
 name: CI
-
 on:
   push:
     branches: [ main, "feat/**", "fix/**", "ci/**", "docs/**", "chore/**" ]
   pull_request:
     branches: [ main ]
   workflow_dispatch: {}
-
 permissions:
   contents: read
-
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -21,13 +18,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        python-version: [ "3.11", "3.12" ]
+      matrix: { python-version: [ "3.11", "3.12" ] }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
+        with: { python-version: ${{ matrix.python-version }} }
       - name: Install Poetry
         run: |
           python -m pip install --upgrade pip
@@ -51,29 +46,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - name: Install deps
-        run: npm ci
-      - name: ESLint
-        run: npx eslint . --max-warnings=0
-      - name: Prettier
-        run: npx prettier -c . --ignore-unknown
-      - name: Type-check
-        run: |
-          if [ -f tsconfig.json ]; then
-            npx tsc -p tsconfig.json --noEmit
-          else
-            echo "Sin TypeScript"
-          fi
-      - name: Tests
-        run: |
-          if jq -e '.scripts.test' package.json >/dev/null 2>&1; then
-            npm test
-          else
-            echo "Sin tests Node"
-          fi
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npx eslint . --max-warnings=0
+      - run: npx prettier -c . --ignore-unknown
+      - run: |
+          if [ -f tsconfig.json ]; then npx tsc -p tsconfig.json --noEmit; else echo "Sin TypeScript"; fi
+      - run: |
+          if jq -e '.scripts.test' package.json >/dev/null 2>&1; then npm test; else echo "Sin tests Node"; fi
 
   python-windows:
     name: Python (Windows opcional)
@@ -83,8 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+        with: { python-version: "3.12" }
       - name: Install Poetry
         run: |
           python -m pip install --upgrade pip
