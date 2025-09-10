@@ -6,9 +6,10 @@
   "license": "MIT",
   "scripts": {
     "lint": "eslint .",
-    "format": "prettier -c .",
+    "format": "prettier -w .",
     "build": "tsc -p tsconfig.json",
-    "test": "jest"
+    "test": "jest",
+    "format:check": "prettier -c . --ignore-unknown"
   },
   "jest": {
     "preset": "ts-jest",
