@@ -14,7 +14,7 @@ python = ">=3.11,<3.13"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
-pytest-cov = "^4.1.0"
+pytest-cov = "^7.0.0"
 ruff = "^0.6.0"
 black = "^24.0.0"
 
