@@ -15,8 +15,6 @@ concurrency:
   cancel-in-progress: true
 
 # Evita acceder a campos inexistentes fuera de PR
-env:
-
 jobs:
   python-linux:
     name: Python (Linux, ${{ matrix.python-version }})
