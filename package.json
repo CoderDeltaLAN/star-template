@@ -28,8 +28,16 @@
   },
   "files": [
     "lib/src",
-    "LICENSE",
     "README.md",
+    "LICENSE",
     "SECURITY.md"
-  ]
+  ],
+  "main": "lib/src/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/src/index.js",
+      "types": "./lib/src/index.d.ts"
+    }
+  },
+  "types": "lib/src/index.d.ts"
 }
