@@ -16,12 +16,11 @@ concurrency:
 
 # Evita acceder a campos inexistentes fuera de PR
 env:
-  PR_IS_DRAFT: ${{ github.event.pull_request.draft }}
 
 jobs:
   python-linux:
     name: Python (Linux, ${{ matrix.python-version }})
-    if: ${{ env.PR_IS_DRAFT != 'true' }}
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -50,7 +49,7 @@ jobs:
 
   node-linux:
     name: Node (Linux)
-    if: ${{ env.PR_IS_DRAFT != 'true' }}
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -81,7 +80,7 @@ jobs:
 
   python-windows:
     name: Python (Windows opcional)
-    if: ${{ env.PR_IS_DRAFT != 'true' }}
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: windows-latest
     continue-on-error: true
     steps:
