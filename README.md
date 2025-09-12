@@ -18,6 +18,7 @@ Use it to bootstrap small libs or new repos that must **stay green**, integrate 
 ---
 
 ## Repo layout
+
 ```text
 .
 ├── lib/                 # TS build output
@@ -32,6 +33,7 @@ Use it to bootstrap small libs or new repos that must **stay green**, integrate 
 ## 🚀 Quick Start
 
 ### Node / TypeScript
+
 ```bash
 npm ci
 npx prettier -c .
@@ -41,6 +43,7 @@ npm test --silent
 ```
 
 Pack + smoke locally:
+
 ```bash
 npm pack
 mkdir -p /tmp/star-template-npm-smoke && cd /tmp/star-template-npm-smoke
@@ -50,6 +53,7 @@ node -e "require('star-template-ts'); console.log('node import OK')"
 ```
 
 ### Python
+
 ```bash
 poetry install --no-interaction
 poetry run ruff check .
@@ -91,6 +95,7 @@ poetry run mypy src
 - **CodeQL** enabled for static analysis.
 
 Example Python job steps:
+
 ```yaml
 - run: python -m pip install -U pip
 - run: pip install ruff black pytest mypy
