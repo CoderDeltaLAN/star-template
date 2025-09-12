@@ -1,4 +1,5 @@
 _ci_logs/
+_intel/
 *.ndjson
 *.log
 .mypy_cache/
