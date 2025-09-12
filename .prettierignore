@@ -1,3 +1,6 @@
 _ci_logs/
 *.ndjson
 *.log
+.mypy_cache/
+.pytest_cache/
+.venv/
