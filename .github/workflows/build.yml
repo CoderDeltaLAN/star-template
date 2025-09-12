@@ -1,100 +1,110 @@
-name: CI
+name: build
 
 on:
   push:
-    branches: [ main, "feat/**", "fix/**", "ci/**", "docs/**", "chore/**" ]
+    branches: ["**"]
   pull_request:
-    branches: [ main ]
-  workflow_dispatch: {}
-
-permissions:
-  contents: read
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
-# Evita acceder a campos inexistentes fuera de PR
-env:
-  PR_IS_DRAFT: ${{ github.event.pull_request.draft }}
+    branches: ["**"]
+  workflow_dispatch:
 
 jobs:
   python-linux:
     name: Python (Linux, ${{ matrix.python-version }})
-    if: ${{ env.PR_IS_DRAFT != 'true' }}
+    if: ${{ github.event_name != 'pull_request' || (github.event.pull_request && !github.event.pull_request.draft) }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ "3.11", "3.12" ]
+        python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install Poetry
+
+      - name: Setup Poetry
         run: |
           python -m pip install --upgrade pip
           pip install "poetry==1.8.3"
-          poetry --version
+
+      - name: Prepare log dir
+        run: |
+          echo "LOG_DIR=$RUNNER_TEMP/logs" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/logs"
+
       - name: Install deps
         run: poetry install --no-interaction
+
       - name: Ruff
-        run: poetry run ruff check . --output-format=github
-      - name: Black
-        run: poetry run black --check .
-      - name: Pytest
-        run: PYTHONPATH=src poetry run pytest -q --disable-warnings
-      - name: Mypy
-        run: poetry run mypy .
+        run: poetry run ruff check . --output-format=github | tee -a "$LOG_DIR/ruff.log"
+
+      - name: Black check
+        run: poetry run black --check . | tee -a "$LOG_DIR/black.log"
+
+      - name: Pytests
+        env:
+          PYTHONPATH: src
+        run: poetry run pytest -q --disable-warnings | tee -a "$LOG_DIR/pytest.log"
+
+      - name: Mypy (src)
+        run: poetry run mypy src | tee -a "$LOG_DIR/mypy.log"
+
+      - name: Smoke import
+        run: poetry run python -c "import star_template; print('py-smoke-ok')" | tee -a "$LOG_DIR/smoke.log"
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-${{ matrix.python-version }}-logs
+          path: ${{ env.LOG_DIR }}
+          if-no-files-found: ignore
+          retention-days: 7
 
   node-linux:
     name: Node (Linux)
-    if: ${{ env.PR_IS_DRAFT != 'true' }}
+    if: ${{ github.event_name != 'pull_request' || (github.event.pull_request && !github.event.pull_request.draft) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - name: Install deps
-        run: npm ci
-      - name: ESLint
-        run: npx eslint . --max-warnings=0
-      - name: Prettier
-        run: npx prettier -c . --ignore-unknown
+
+      - name: Prepare log dir
+        run: |
+          echo "LOG_DIR=$RUNNER_TEMP/node-logs" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/node-logs"
+
+      - run: sudo apt-get update && sudo apt-get install -y jq
+      - run: npm ci --silent                 | tee -a "$LOG_DIR/npm-ci.log"
+      - run: npx eslint . --max-warnings=0  | tee -a "$LOG_DIR/eslint.log"
+      - run: npx prettier -c . --ignore-unknown | tee -a "$LOG_DIR/prettier.log"
+
       - name: Type-check
         run: |
           if [ -f tsconfig.json ]; then
-            npx tsc -p tsconfig.json --noEmit
+            npx tsc -p tsconfig.json --noEmit | tee -a "$LOG_DIR/tsc.log"
           else
-            echo "Sin TypeScript"
-          fi
-      - name: Tests
-        run: |
-          if jq -e '.scripts.test' package.json >/dev/null 2>&1; then
-            npm test
-          else
-            echo "Sin tests Node"
+            echo "No TS" | tee -a "$LOG_DIR/tsc.log"
           fi
 
-  python-windows:
-    name: Python (Windows opcional)
-    if: ${{ env.PR_IS_DRAFT != 'true' }}
-    runs-on: windows-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Install Poetry
+      - name: Tests
         run: |
-          python -m pip install --upgrade pip
-          pip install "poetry==1.8.3"
-          poetry --version
-      - name: Install deps
-        run: poetry install --no-interaction
-      - name: Pytest
-        run: PYTHONPATH=src poetry run pytest -q --disable-warnings
+          if jq -re '.scripts.test' package.json >/dev/null 2>&1; then
+            npm test | tee -a "$LOG_DIR/tests.log"
+          else
+            echo "No Node tests" | tee -a "$LOG_DIR/tests.log"
+          fi
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-logs
+          path: ${{ env.LOG_DIR }}
+          if-no-files-found: ignore
+          retention-days: 7

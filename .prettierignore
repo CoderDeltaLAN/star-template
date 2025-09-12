@@ -1,22 +1,7 @@
-# build artefacts
-lib
-dist
-build
-coverage
-# deps and envs
-node_modules
-.venv
-.pytest_cache
-# vcs
-.git
-# python dists
-dist/*.whl
-dist/*.tar.gz
-# misc
-sbom.cdx.json
-.github/workflows/*.yml
+_ci_logs/
+_intel/
+*.ndjson
+*.log
 .mypy_cache/
-.ruff_cache/
+.pytest_cache/
 .venv/
-dist/
-build/
