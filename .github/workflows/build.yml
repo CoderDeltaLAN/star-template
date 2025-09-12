@@ -1,15 +1,9 @@
 name: CI
-
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  push: { branches: [ main ] }
+  pull_request: { branches: [ main ] }
   workflow_dispatch: {}
-
-permissions:
-  contents: read
-
+permissions: { contents: read }
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -19,35 +13,35 @@ jobs:
     name: Python (Linux, ${{ matrix.python-version }})
     if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [ "3.11", "3.12" ]
+    strategy: { fail-fast: false, matrix: { python-version: [ "3.11", "3.12" ] } }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
+        with: { python-version: ${{ matrix.python-version }} }
       - run: python -m pip install --upgrade pip
       - run: pip install "poetry==1.8.3"
       - run: poetry install --no-interaction
       - run: poetry run ruff check . --output-format=github
       - run: poetry run black --check .
       - run: PYTHONPATH=src poetry run pytest -q --disable-warnings
-      - run: poetry run mypy .
+      - name: Mypy
+        env: { MYPYPATH: src }
+        run: poetry run mypy src
 
   node-linux:
     name: Node (Linux)
     if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
+    env:
+      NPM_CONFIG_LOGLEVEL: error
+      NPM_CONFIG_AUDIT: "false"
+      NPM_CONFIG_FUND: "false"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
+        with: { node-version: 20, cache: npm }
       - run: sudo apt-get update && sudo apt-get install -y jq
-      - run: npm ci
+      - run: npm ci --silent
       - run: npx eslint . --max-warnings=0
       - run: npx prettier -c . --ignore-unknown
       - name: Type-check
