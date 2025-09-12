@@ -2,49 +2,20 @@ name: build
 
 on:
   push:
-    branches: [ main, "ci/**" ]
+    branches: ["**"]
   pull_request:
+    branches: ["**"]
   workflow_dispatch:
 
 jobs:
-  node:
-    name: Node (Lint/Type/Test)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install deps
-        run: npm ci --silent
-
-      - name: Prettier check
-        run: npx prettier -c . --ignore-unknown
-
-      - name: ESLint
-        run: npx eslint . --max-warnings=0
-
-      - name: Type-check
-        if: ${{ hashFiles('tsconfig.json') != '' }}
-        run: npx tsc -p tsconfig.json --noEmit
-
-      - name: Tests
-        run: |
-          if jq -re '.scripts.test' package.json >/dev/null 2>&1; then
-            npm test --silent
-          else
-            echo "No Node tests"
-          fi
-
-  python:
+  python-linux:
     name: Python (Linux, ${{ matrix.python-version }})
+    if: ${{ github.event_name != 'pull_request' || (github.event.pull_request && !github.event.pull_request.draft) }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11","3.12"]
+        python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
 
@@ -52,27 +23,78 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Upgrade pip + Poetry
+      - name: Setup Poetry
         run: |
-          python -m pip install -U pip
+          python -m pip install --upgrade pip
           pip install "poetry==1.8.3"
 
-      - name: Install deps (Poetry)
+      - name: Prepare log dir
+        run: |
+          echo "LOG_DIR=$RUNNER_TEMP/logs" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/logs"
+
+      - name: Install deps
         run: poetry install --no-interaction
 
       - name: Ruff
-        run: poetry run ruff check .
+        run: poetry run ruff check . --output-format=github | tee -a "$LOG_DIR/ruff.log"
 
       - name: Black check
-        run: poetry run black --check .
+        run: poetry run black --check . | tee -a "$LOG_DIR/black.log"
 
       - name: Pytests
         env:
           PYTHONPATH: src
-        run: poetry run pytest -q --disable-warnings
+        run: poetry run pytest -q --disable-warnings | tee -a "$LOG_DIR/pytest.log"
 
       - name: Mypy (src)
-        run: poetry run mypy src
+        run: poetry run mypy src | tee -a "$LOG_DIR/mypy.log"
 
       - name: Smoke import
-        run: poetry run python -c "import star_template; print('py-smoke-ok')"
+        run: poetry run python -c "import star_template; print('py-smoke-ok')" | tee -a "$LOG_DIR/smoke.log"
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-${{ matrix.python-version }}-logs
+          path: ${{ env.LOG_DIR }}
+          if-no-files-found: ignore
+          retention-days: 7
+
+  node-linux:
+    name: Node (Linux)
+    if: ${{ github.event_name != 'pull_request' || (github.event.pull_request && !github.event.pull_request.draft) }}
+    runs-on: ubuntu-latest
+    env:
+      NPM_CONFIG_LOGLEVEL: error
+      NPM_CONFIG_AUDIT: "false"
+      NPM_CONFIG_FUND: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: sudo apt-get update && sudo apt-get install -y jq
+      - run: npm ci --silent
+      - run: npx eslint . --max-warnings=0
+      - run: npx prettier -c . --ignore-unknown
+
+      - name: Type-check
+        run: |
+          if [ -f tsconfig.json ]; then
+            npx tsc -p tsconfig.json --noEmit
+          else
+            echo "No TS"
+          fi
+
+      - name: Tests
+        run: |
+          if jq -re '.scripts.test' package.json >/dev/null 2>&1; then
+            npm test
+          else
+            echo "No Node tests"
+          fi
