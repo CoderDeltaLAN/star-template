@@ -14,7 +14,8 @@ jobs:
     if: ${{ github.event_name != 'pull_request' || (github.event.pull_request && !github.event.pull_request.draft) }}
     runs-on: ubuntu-latest
     strategy: { fail-fast: false, matrix: { python-version: [ "3.11", "3.12" ] } }
-    env: { LOG_DIR: ${{ runner.temp }}/logs }
+    env:
+      LOG_DIR: "${{ runner.temp }}/logs"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
