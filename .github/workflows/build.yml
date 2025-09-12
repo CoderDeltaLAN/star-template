@@ -1,51 +1,48 @@
-name: CI
+name: build
+
 on:
-  push: { branches: [ main ] }
-  pull_request: { branches: [ main ] }
-  workflow_dispatch: {}
-permissions: { contents: read }
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+  workflow_dispatch:
 
 jobs:
   python-linux:
     name: Python (Linux, ${{ matrix.python-version }})
     if: ${{ github.event_name != 'pull_request' || (github.event.pull_request && !github.event.pull_request.draft) }}
     runs-on: ubuntu-latest
-    strategy: { fail-fast: false, matrix: { python-version: [ "3.11", "3.12" ] } }
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
     env:
-      LOG_DIR: "${{ runner.temp }}/logs"
+      LOG_DIR: ${{ runner.temp }}/logs
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: ${{ matrix.python-version }} }
+        with:
+          python-version: ${{ matrix.python-version }}
 
       - name: Setup Poetry
         run: |
-          mkdir -p "$LOG_DIR"
-          python -m pip install --upgrade pip 2>&1 | tee "$LOG_DIR/pip_${{ matrix.python-version }}.log"; test ${PIPESTATUS[0]} -eq 0
-          pip install "poetry==1.8.3"              2>&1 | tee "$LOG_DIR/poetry_${{ matrix.python-version }}.log"; test ${PIPESTATUS[0]} -eq 0
+          python -m pip install --upgrade pip
+          pip install "poetry==1.8.3"
 
-      - name: Poetry install
-        run: |
-          poetry install --no-interaction 2>&1 | tee "$LOG_DIR/poetry_install_${{ matrix.python-version }}.log"; test ${PIPESTATUS[0]} -eq 0
+      - name: Install deps
+        run: poetry install --no-interaction
 
       - name: Ruff
-        run: |
-          poetry run ruff check . --output-format=github 2>&1 | tee "$LOG_DIR/ruff_${{ matrix.python-version }}.log"; test ${PIPESTATUS[0]} -eq 0
+        run: poetry run ruff check . --output-format=github | tee -a "${LOG_DIR}/ruff.log"
 
-      - name: Black (check)
-        run: |
-          poetry run black --check . 2>&1 | tee "$LOG_DIR/black_${{ matrix.python-version }}.log"; test ${PIPESTATUS[0]} -eq 0
+      - name: Black check
+        run: poetry run black --check . | tee -a "${LOG_DIR}/black.log"
 
       - name: Pytest
-        run: |
-          PYTHONPATH=src poetry run pytest -q --disable-warnings 2>&1 | tee "$LOG_DIR/pytest_${{ matrix.python-version }}.log"; test ${PIPESTATUS[0]} -eq 0
+        run: PYTHONPATH=src poetry run pytest -q --disable-warnings | tee -a "${LOG_DIR}/pytest.log"
 
-      - name: Mypy
-        run: |
-          poetry run mypy src 2>&1 | tee "$LOG_DIR/mypy_${{ matrix.python-version }}.log"; test ${PIPESTATUS[0]} -eq 0
+      - name: mypy
+        run: poetry run mypy src | tee -a "${LOG_DIR}/mypy.log"
 
       - name: Upload logs
         if: always()
@@ -53,50 +50,38 @@ jobs:
         with:
           name: python-${{ matrix.python-version }}-logs
           path: ${{ env.LOG_DIR }}
-          if-no-files-found: warn
+          if-no-files-found: ignore
+          retention-days: 7
 
   node-linux:
     name: Node (Linux)
     if: ${{ github.event_name != 'pull_request' || (github.event.pull_request && !github.event.pull_request.draft) }}
     runs-on: ubuntu-latest
     env:
-      LOG_DIR: ${{ runner.temp }}/logs
       NPM_CONFIG_LOGLEVEL: error
       NPM_CONFIG_AUDIT: "false"
       NPM_CONFIG_FUND: "false"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: npm }
-
-      - name: Ensure jq
-        run: sudo apt-get update && sudo apt-get install -y jq
-
-      - name: npm ci
-        run: |
-          mkdir -p "$LOG_DIR"
-          npm ci --silent 2>&1 | tee "$LOG_DIR/npm_ci.log"; test ${PIPESTATUS[0]} -eq 0
-
-      - name: ESLint
-        run: |
-          npx eslint . --max-warnings=0 2>&1 | tee "$LOG_DIR/eslint.log"; test ${PIPESTATUS[0]} -eq 0
-
-      - name: Prettier
-        run: |
-          npx prettier -c . --ignore-unknown 2>&1 | tee "$LOG_DIR/prettier.log"; test ${PIPESTATUS[0]} -eq 0
-
+        with:
+          node-version: 20
+          cache: npm
+      - run: sudo apt-get update && sudo apt-get install -y jq
+      - run: npm ci --silent
+      - run: npx eslint . --max-warnings=0
+      - run: npx prettier -c . --ignore-unknown
       - name: Type-check
         run: |
-          ( if [ -f tsconfig.json ]; then npx tsc -p tsconfig.json --noEmit; else echo "No TS"; fi ) 2>&1 | tee "$LOG_DIR/tsc.log"; test ${PIPESTATUS[0]} -eq 0
-
+          if [ -f tsconfig.json ]; then
+            npx tsc -p tsconfig.json --noEmit
+          else
+            echo "No TS"
+          fi
       - name: Tests
         run: |
-          ( if jq -re '.scripts.test' package.json >/dev/null 2>&1; then npm test; else echo "No Node tests"; fi ) 2>&1 | tee "$LOG_DIR/npm_test.log"; test ${PIPESTATUS[0]} -eq 0
-
-      - name: Upload logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: node-logs
-          path: ${{ env.LOG_DIR }}
-          if-no-files-found: warn
+          if jq -re '.scripts.test' package.json >/dev/null 2>&1; then
+            npm test
+          else
+            echo "No Node tests"
+          fi
