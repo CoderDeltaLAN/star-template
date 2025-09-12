@@ -66,10 +66,6 @@ jobs:
     name: Node (Linux)
     if: ${{ github.event_name != 'pull_request' || (github.event.pull_request && !github.event.pull_request.draft) }}
     runs-on: ubuntu-latest
-    env:
-      NPM_CONFIG_LOGLEVEL: error
-      NPM_CONFIG_AUDIT: "false"
-      NPM_CONFIG_FUND: "false"
     steps:
       - uses: actions/checkout@v4
 
@@ -78,23 +74,37 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Prepare log dir
+        run: |
+          echo "LOG_DIR=$RUNNER_TEMP/node-logs" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/node-logs"
+
       - run: sudo apt-get update && sudo apt-get install -y jq
-      - run: npm ci --silent
-      - run: npx eslint . --max-warnings=0
-      - run: npx prettier -c . --ignore-unknown
+      - run: npm ci --silent                 | tee -a "$LOG_DIR/npm-ci.log"
+      - run: npx eslint . --max-warnings=0  | tee -a "$LOG_DIR/eslint.log"
+      - run: npx prettier -c . --ignore-unknown | tee -a "$LOG_DIR/prettier.log"
 
       - name: Type-check
         run: |
           if [ -f tsconfig.json ]; then
-            npx tsc -p tsconfig.json --noEmit
+            npx tsc -p tsconfig.json --noEmit | tee -a "$LOG_DIR/tsc.log"
           else
-            echo "No TS"
+            echo "No TS" | tee -a "$LOG_DIR/tsc.log"
           fi
 
       - name: Tests
         run: |
           if jq -re '.scripts.test' package.json >/dev/null 2>&1; then
-            npm test
+            npm test | tee -a "$LOG_DIR/tests.log"
           else
-            echo "No Node tests"
+            echo "No Node tests" | tee -a "$LOG_DIR/tests.log"
           fi
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-logs
+          path: ${{ env.LOG_DIR }}
+          if-no-files-found: ignore
+          retention-days: 7
