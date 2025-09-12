@@ -33,7 +33,13 @@ jobs:
       - run: poetry run ruff check . --output-format=github
       - run: poetry run black --check .
       - name: Mypy (src)
-        run: poetry run mypy src --show-error-codes --pretty | tee mypy.log
+      - name: mypy (types)
+        run: poetry run mypy src | tee mypy.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mypy-${{ matrix.python-version }}
+          path: mypy.log
       - name: Upload mypy log
         uses: actions/upload-artifact@v4
         with:
