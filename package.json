@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "CoderDeltaLAN star template (TypeScript)",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "scripts": {
     "lint": "eslint .",
     "format": "prettier -w .",
