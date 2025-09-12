@@ -8,6 +8,7 @@ Use it to bootstrap small libs or new repos that must **stay green**, integrate 
 
 [![Build](https://github.com/CoderDeltaLAN/star-template/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/CoderDeltaLAN/star-template/actions/workflows/build.yml)
 [![CodeQL](https://github.com/CoderDeltaLAN/star-template/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/CoderDeltaLAN/star-template/actions/workflows/codeql.yml)
+[![Release](https://img.shields.io/github/v/release/CoderDeltaLAN/star-template?display_name=tag)](https://github.com/CoderDeltaLAN/star-template/releases)
 ![Python 3.11|3.12](https://img.shields.io/badge/Python-3.11%20|%203.12-3776AB?logo=python)
 ![Node 20.x](https://img.shields.io/badge/Node-20.x-339933?logo=node.js)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
