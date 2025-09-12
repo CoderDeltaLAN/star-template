@@ -1,56 +1,80 @@
-# star-template
+# ⭐ Star Template — Always‑Green Starter for Node + Python
 
-> **Always-Green starter** for **TypeScript libraries** and **Python packages**. It mirrors CI locally, enforces fast quality gates, and ships with a robust GitHub Actions matrix (Node + Python) plus **CodeQL**. Use it to start projects that stay green, publish confidently, and keep histories clean.
+A lean, production‑grade template for **TypeScript libraries** and **Python packages** with a **strict green workflow**.  
+It mirrors CI locally, enforces style/tests/typing, ships with **GitHub Actions** (Linux matrix) and **CodeQL**, and keeps histories clean and linear.  
+Use it to bootstrap small libs or new repos that must **stay green**, integrate safely, and scale with confidence.
+
+<div align="center">
 
 [![Build](https://github.com/CoderDeltaLAN/star-template/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/CoderDeltaLAN/star-template/actions/workflows/build.yml)
 [![CodeQL](https://github.com/CoderDeltaLAN/star-template/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/CoderDeltaLAN/star-template/actions/workflows/codeql.yml)
+![Python 3.11|3.12](https://img.shields.io/badge/Python-3.11%20|%203.12-3776AB?logo=python)
+![Node 20.x](https://img.shields.io/badge/Node-20.x-339933?logo=node.js)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Always-Green](https://img.shields.io/badge/always--green-CI-2ea44f?logo=githubactions)
+
+</div>
 
 ---
 
-## What is this?
+## 📸 Visual Overview
 
-`star-template` is a **production-grade template** that gives you two batteries-included stacks:
+### CI pipeline (GitHub Actions)
 
-- **TypeScript (Node)** — TS5, ESLint 9 (flat), Prettier 3, Jest, optional type-check via `tsc --noEmit`.
-- **Python** — Poetry, ruff, black, pytest, mypy, and **100% coverage gate** (configurable).
+> Real‑time status is in the badges above — the diagram shows what runs on each push/PR.
 
-It is designed for teams that want:
+```mermaid
+flowchart LR
+  subgraph Node["Node (Linux)"]
+    A1[Prettier check]
+    A2[ESLint (no warnings)]
+    A3[TypeScript --noEmit]
+    A4[Jest tests]
+  end
 
-- **Identical local and CI gates** (no “works on my machine”).
-- **Fast feedback**: linters first, tests next, type checkers last.
-- **Green-only merges** with **branch protection** compatibility.
-- **Security** by default via **GitHub CodeQL**.
-- **Readable logs** per job, uploaded as CI artifacts.
+  subgraph Py311["Python (Linux, 3.11)"]
+    B1[ruff]
+    B2[black --check]
+    B3[pytest -q]
+    B4[mypy src]
+    B5[smoke import]
+  end
+
+  subgraph Py312["Python (Linux, 3.12)"]
+    C1[ruff]
+    C2[black --check]
+    C3[pytest -q]
+    C4[mypy src]
+    C5[smoke import]
+  end
+
+  subgraph Sec["Security"]
+    D1[CodeQL analyze]
+  end
+
+  A1 --> A2 --> A3 --> A4
+  B1 --> B2 --> B3 --> B4 --> B5
+  C1 --> C2 --> C3 --> C4 --> C5
+  A4 --> D1
+  B5 --> D1
+  C5 --> D1
+```
+
+### Repo layout
+
+```text
+.
+├── lib/                 # TS build output
+├── test/                # TS tests (Jest)
+├── src/star_template/   # Python package
+├── tests/               # Python tests (pytest)
+└── .github/workflows/   # build.yml, codeql.yml
+```
 
 ---
 
-## When to use it
+## 🚀 Quick Start
 
-- You’re starting a new lib (TS or Python) and want **sane defaults**.
-- You require **consistent quality gates** across contributors and CI.
-- You care about **clean commit history** and **reliable PR signals**.
-- You want **both ecosystems** in one repo (dual-stack), or just one—keep what you need.
-
----
-
-## Highlights
-
-- ✅ **Always-Green**: local preflight equals CI checks.
-- 🧪 **Tests**: Jest for TS, pytest for Python; coverage gate on Python by default.
-- 🧹 **Style & Lint**: Prettier 3, ESLint 9, ruff, black.
-- 🔎 **Types**: `tsc --noEmit` and **mypy** on `src`.
-- 🔐 **Security**: **CodeQL** workflow wired.
-- 🧰 **Artifacts**: per-job logs (Node & Python) uploaded automatically.
-- 🧩 **Branch-protection friendly**: job names are stable and intended as required checks.
-- 🧪 **Smoke tests** for importability (Node & Python).
-
----
-
-## Quick Start
-
-### TypeScript / Node
+### Node / TypeScript
 
 ```bash
 npm ci
@@ -60,12 +84,11 @@ npx eslint . --max-warnings=0
 npm test --silent
 ```
 
-Pack & smoke locally:
+Pack + smoke locally:
 
 ```bash
 npm pack
-# smoke install from a temp folder
-TMP=/tmp/star-template-npm-smoke && rm -rf "$TMP" && mkdir -p "$TMP" && cd "$TMP"
+mkdir -p /tmp/star-template-npm-smoke && cd /tmp/star-template-npm-smoke
 npm init -y >/dev/null
 npm install "/absolute/path/to/star-template-ts-<version>.tgz" --silent
 node -e "require('star-template-ts'); console.log('node import OK')"
@@ -77,172 +100,107 @@ node -e "require('star-template-ts'); console.log('node import OK')"
 poetry install --no-interaction
 poetry run ruff check .
 poetry run black --check .
-PYTHONPATH=src poetry run pytest -q --disable-warnings
+PYTHONPATH=src poetry run pytest -q
 poetry run mypy src
-```
-
-Smoke import & build:
-
-```bash
-poetry run python -c "import star_template as m; print('python import OK', getattr(m,'__version__','?'))"
 poetry build
+python - <<'PY'
+import importlib; m = importlib.import_module("star_template")
+print("python import OK:", getattr(m, "__version__", "unknown"))
+PY
 ```
 
 ---
 
-## Local Workflow (same as CI)
+## 🧪 Local Developer Workflow (mirrors CI)
 
 ```bash
 # Node
 npx prettier -c .
 npx eslint . --max-warnings=0
-[ -f tsconfig.json ] && npx tsc -p tsconfig.json --noEmit || true
+[ -f tsconfig.json ] && npx tsc --noEmit || true
 npm test --silent
 
 # Python
 poetry run ruff check .
 poetry run black --check .
-PYTHONPATH=src poetry run pytest -q --disable-warnings
+PYTHONPATH=src poetry run pytest -q
 poetry run mypy src
 ```
 
-> If it’s green locally, it’s green in CI.
-
 ---
 
-## CI (GitHub Actions)
+## 🔧 CI (GitHub Actions)
 
-- **Workflow**: `.github/workflows/build.yml` (Linux matrix).
-- **Jobs**:
-  - **Node (Linux)** — `npm ci` ➜ Prettier ➜ ESLint ➜ (optional) `tsc --noEmit` ➜ Jest.
-  - **Python (Linux, 3.11/3.12)** — ruff ➜ black ➜ pytest (100% gate) ➜ mypy ➜ smoke import.
-- **Artifacts**: Each job uploads logs under `python-3.xx-logs/*` and `node-logs/*`.
+- Linux matrix for Node and Python (3.11, 3.12).
+- Jobs match local gates to avoid “works‑on‑my‑machine”.
+- **Logs per job** are uploaded as artifacts for troubleshooting.
+- **CodeQL** enabled for static analysis.
 
-Status badges (main branch):
+Example Python job steps:
 
-- Build: \
-  `https://github.com/CoderDeltaLAN/star-template/actions/workflows/build.yml/badge.svg?branch=main`
-- CodeQL: \
-  `https://github.com/CoderDeltaLAN/star-template/actions/workflows/codeql.yml/badge.svg?branch=main`
-
-### Required checks (branch protection)
-
-Recommended required checks for `main`:
-
-- `build/Node (Linux)`
-- `build/Python (Linux, 3.11)`
-- `build/Python (Linux, 3.12)`
-- `CodeQL/CodeQL Analyze (push)` and/or `(pull_request)`
-
-> Job names are intentionally stable so you can copy them into protection rules.
-
-### Fetch CI logs locally (GitHub CLI)
-
-```bash
-# last run of build on main
-RID="$(gh run list --workflow build.yml --branch main --limit 1 --json databaseId --jq '.[0].databaseId')"
-mkdir -p _ci_logs/"$RID"
-gh run view "$RID" --log > _ci_logs/run_"$RID".log
-gh run download "$RID" --dir _ci_logs/"$RID"
+```yaml
+- run: python -m pip install -U pip
+- run: pip install ruff black pytest mypy
+- run: ruff check .
+- run: black --check .
+- run: pytest -q
+- run: mypy src
 ```
 
 ---
 
-## Project Structure
+## 🗺️ When to Use This Template
 
-```
-.
-├── lib/                 # TS build output
-├── test/                # TS tests (Jest)
-├── src/star_template/   # Python package
-├── tests/               # Python tests (pytest)
-└── .github/workflows/   # build.yml, codeql.yml
-```
+- You need a **minimal yet strict** starter for Node + Python libs.
+- **Always‑green** policy: PRs blocked unless checks pass.
+- You value **linear history** (squash merge) and reproducible local gates.
 
 ---
 
-## Releasing (manual, example)
+## 🧩 Customization
 
-### Node (npm)
-
-```bash
-npm version <patch|minor|major>
-npm publish --access public
-```
-
-### Python (PyPI)
-
-```bash
-poetry version <patch|minor|major>
-poetry build
-poetry publish
-```
-
-> Automating releases is intentionally left out—add your favorite release pipeline when ready.
+- Use only one stack? Remove the other stack’s files and its CI job.
+- Add Windows/macOS runners by extending `build.yml`.
+- Lower strictness (e.g., Python coverage) by adjusting `pytest.ini`.
 
 ---
 
-## Troubleshooting
+## 🛡️ Security
 
-- **Prettier fails on CI artifacts** → `_ci_logs/**` is ignored via `.prettierignore`.
-- **Matrix logs** → artifacts are grouped per job, e.g. `python-3.12-logs/pytest.log`.
-- **Rerun only failed** → `gh run rerun <run-id> --failed`.
-- **Clean orphaned runs** (stale branches):
-  ```bash
-  REPO="CoderDeltaLAN/star-template"
-  ACTIVE="$(gh api "repos/$REPO/branches?per_page=100" --paginate --jq '.[].name' | sort -u)"
-  gh api "repos/$REPO/actions/runs?per_page=100" --paginate \
-    --jq '.workflow_runs[] | [.id,.head_branch,.conclusion] | @tsv' \
-  | while IFS=$'\t' read -r ID BR C; do
-      echo "$ACTIVE" | grep -qx "$BR" || gh api -X DELETE "repos/$REPO/actions/runs/$ID" >/dev/null 2>&1 || true
-    done
-  ```
+- Private disclosures via GitHub Security advisories.
+- **CodeQL** runs on PRs and pushes to `main`.
 
 ---
 
-## Contributing
+## 🙌 Contributing
 
 - **Small, atomic PRs** with Conventional Commits.
 - Keep **local gates** green before pushing.
-- Enable **auto-merge** once checks pass.
-
----
-
-## Security
-
-- Use **GitHub Security** advisory process for private disclosures.
-- **CodeQL** runs on PRs and/or pushes to `main`.
-
----
-
-## FAQ
-
-**Q: Can I use only one stack?**  
-Yes. Delete the other stack’s files and remove its CI job.
-
-**Q: Windows/macOS runners?**  
-Add extra jobs to `build.yml` if you need broader OS coverage.
-
-**Q: Why 100% Python coverage by default?**  
-To set a high bar for small libs. Adjust in `pytest.ini` if needed.
+- Enable **auto‑merge** once checks pass.
 
 ---
 
 ## 📈 SEO Keywords
 
-always green ci template, typescript library starter, node eslint prettier jest template,
-python package template poetry, ruff black pytest mypy starter, github actions matrix ci,
-codeql security scan template, branch protection required checks, dual stack repo template,
-clean history conventional commits, npm pack smoke test, poetry build smoke test
+always green ci template, always‑green workflow, typescript library starter, node eslint prettier jest template,  
+python package template poetry, ruff black pytest mypy starter, github actions matrix ci, codeql security scan template,  
+branch protection required checks, dual stack repo template, clean history conventional commits, npm pack smoke test,  
+poetry build smoke test, linux matrix ci, job log artifacts, reproducible dev workflow
 
 ---
 
-## Author
+## 💚 Donations & Sponsorship
+
+Open-source takes time. If this template saves you hours, consider supporting continued maintenance and polish. Thank you!
+
+[![Donate](https://img.shields.io/badge/Donate-PayPal-0070ba?logo=paypal&logoColor=white)](https://www.paypal.com/donate/?hosted_button_id=YVENCBNCZWVPW)
+
+## 👤 Author
 
 **CoderDeltaLAN (Yosvel)**  
 Email: `coderdeltalan.cargo784@8alias.com`  
 GitHub: https://github.com/CoderDeltaLAN
 
-## License
+## 📄 License
 
 Released under the **MIT License**. See [LICENSE](LICENSE).
