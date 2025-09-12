@@ -25,30 +25,30 @@ Use it to bootstrap small libs or new repos that must **stay green**, integrate 
 ```mermaid
 flowchart LR
   subgraph Node["Node (Linux)"]
-    A1[Prettier check]
-    A2[ESLint (no warnings)]
-    A3[TypeScript --noEmit]
-    A4[Jest tests]
+    A1["Prettier"]
+    A2["ESLint"]
+    A3["TypeScript --noEmit"]
+    A4["Jest"]
   end
 
   subgraph Py311["Python (Linux, 3.11)"]
-    B1[ruff]
-    B2[black --check]
-    B3[pytest -q]
-    B4[mypy src]
-    B5[smoke import]
+    B1["ruff"]
+    B2["black --check"]
+    B3["pytest -q"]
+    B4["mypy src"]
+    B5["smoke import"]
   end
 
   subgraph Py312["Python (Linux, 3.12)"]
-    C1[ruff]
-    C2[black --check]
-    C3[pytest -q]
-    C4[mypy src]
-    C5[smoke import]
+    C1["ruff"]
+    C2["black --check"]
+    C3["pytest -q"]
+    C4["mypy src"]
+    C5["smoke import"]
   end
 
   subgraph Sec["Security"]
-    D1[CodeQL analyze]
+    D1["CodeQL analyze"]
   end
 
   A1 --> A2 --> A3 --> A4
