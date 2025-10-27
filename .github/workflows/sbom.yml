@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: anchore/sbom-action@v0
         with: { format: cyclonedx-json, output-file: sbom.cdx.json }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with: { name: sbom, path: sbom.cdx.json }
       - if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
